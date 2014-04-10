@@ -16,10 +16,18 @@ my $data = q{
   <nest>
     <id>1</id>
     <val>50</val>
+    <sval>1</sval>
+    <sval>2</sval>
+    <sval>3</sval>
+    <sval>43</sval>
   </nest>
   <nest>
     <id>2</id>
     <val>30</val>
+    <sval>2</sval>
+    <sval>3</sval>
+    <sval>5</sval>
+    <sval>47</sval>
   </nest>
 </data>
 };
@@ -36,7 +44,7 @@ my $scraper = scraper {
   process 'nest', 'nested[]' => scraper {
     process 'id', 'id' => 'TEXT';
     process 'val', 'val' => 'TEXT';
-    1;
+    process 'sval', 'svals[]' => 'TEXT';
   };
 }
 

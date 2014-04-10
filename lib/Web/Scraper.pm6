@@ -20,7 +20,7 @@ class Web::Scraper {
       $flag = 'A' if $atag ~~ m{ '[]' $ } ;
       $atag.=subst(rx{ '[]' $ }, {''}) if $flag eq 'A';
       #do some setup
-      %.d{$atag} = Array.new if $flag eq 'A';
+      %.d{$atag} = $(Array.new) if $flag eq 'A';
       %.d{$atag} = '' if $flag ne 'A';
       if $v ~~ Hash {
         for @elems -> $e {
@@ -43,10 +43,12 @@ class Web::Scraper {
         }
         $.d{$atag} = $spush if $flag ne 'A';
       } elsif $v ~~ Str {
-        $.d{$atag} = '';
+        $.d{$atag} = '' if $flag ne 'A';
+        $.d{$atag} = Array.new if $flag eq 'A';
         for @elems -> $e {
           for @($e.contents) -> $e {
-            $.d{$atag} ~= $e.text;
+            $.d{$atag} ~= $e.text if $flag ne 'A';
+            $.d{$atag}.push($e.text) if $flag eq 'A';
           }
         }
       }
@@ -56,10 +58,9 @@ class Web::Scraper {
   multi method scrape (Str $data, $subelem?) {
     $.ctx = XML::Query.new: xml => from-xml($data) if !$subelem.defined;
     $.ctx = XML::Query.new: xml => $subelem if $subelem.defined;
-    %.d = ();
+    %.d = Hash.new;
 
     my $*dynself = self;
-    "#{$.id}, scraping".say;
     my proto process ($d1, %d2) is export {
       my $self = $*Outer::dynself;
       if %d2.values[0].can('scrape') {
@@ -72,11 +73,10 @@ class Web::Scraper {
         %.d{$atag} = '' if $flag ne 'A';
         for @elems -> $elem {
           %d2.values[0].scrape('', $elem);
-          %.d{$atag} ~= %d2.values[0].d if $flag ne 'A';
-          %.d{$atag}.push( $(%d2.values[0].d) ) if $flag eq 'A';
+          %.d{$atag} ~= %d2.values[0].d.clone if $flag ne 'A';
+          %.d{$atag}.push( $(%d2.values[0].d.clone) ) if $flag eq 'A';
         }
       } else {
-        "$d1".say;
         my @elems = $self.ctx.($d1).elems;
         $self.handler($d1, %d2, @elems);
       }
