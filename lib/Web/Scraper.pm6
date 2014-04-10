@@ -14,6 +14,12 @@ class Web::Scraper {
     my $atag;
     my @o;
     my $o;
+    my $grab = sub ($elem, $val is copy) {
+      my $f = $val.substr(0,1) eq '@' ?? 'A' !! '';
+      $val = $val.substr(1) if $f eq 'A';
+      return $f eq 'A' ?? $elem.attribs{$val} !! $elem.contents[0].text;
+      return '0';
+    };
     for %val.kv -> $k, $v {
       $flag = '';
       $atag = $k;
@@ -27,10 +33,8 @@ class Web::Scraper {
           my %push;
           my $spush;
           for $v.kv -> $k, $v {
-            for @($e.contents) -> $e {
-              %push{$k} = $e.text if $flag eq 'A';
-              $spush    = "$k={$e.text}\n" if $flag ne 'A';
-            }
+            %push{$k} = $grab($e, $v) if $flag eq 'A';
+            $spush    = "$k={$grab($e, $v)}\n" if $flag ne 'A';
           }
           %.d{$atag}.push($(%push)) if $flag eq 'A';
           %.d{$atag} ~= "$spush" if $flag ne 'A';
@@ -38,18 +42,16 @@ class Web::Scraper {
       } elsif $v ~~ Callable {
         my $spush;
         for @elems -> $e {
-          $spush ~= "{$v.(\$e)}" if $flag ne 'A';
-          %.d{$atag}.push($v.($e)) if $flag eq 'A';
+          $spush ~= "{$v.($e.clone)}" if $flag ne 'A';
+          %.d{$atag}.push($v.($e.clone)) if $flag eq 'A';
         }
         $.d{$atag} = $spush if $flag ne 'A';
       } elsif $v ~~ Str {
         $.d{$atag} = '' if $flag ne 'A';
         $.d{$atag} = Array.new if $flag eq 'A';
         for @elems -> $e {
-          for @($e.contents) -> $e {
-            $.d{$atag} ~= $e.text if $flag ne 'A';
-            $.d{$atag}.push($e.text) if $flag eq 'A';
-          }
+          $.d{$atag} ~= $grab($e, $v) if $flag ne 'A';
+          $.d{$atag}.push($grab($e, $v)) if $flag eq 'A';
         }
       }
     }
@@ -64,7 +66,7 @@ class Web::Scraper {
     my proto process ($d1, %d2) is export {
       my $self = $*Outer::dynself;
       if %d2.values[0].can('scrape') {
-        my @elems = $self.ctx.($d1).elems;
+        my @elems = $self.ctx.($d1).elems.clone;
         my $atag = %d2.keys[0];
         my $flag = '';
         $flag = 'A' if $atag ~~ m{ '[]' $ } ;

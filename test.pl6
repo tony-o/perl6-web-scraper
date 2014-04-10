@@ -7,11 +7,11 @@ use Web::Scraper;
 my $data = q{
 
 <data>
-  <t>test1</t>
-  <t>test2</t>
+  <t id="1">test1</t>
+  <t id="2">test2</t>
   <e>etest</e>
-  <t>test3</t>
-  <t>test4</t>
+  <t id="3">test3</t>
+  <t id="4">test4</t>
   <e>etest</e>
   <nest>
     <id>1</id>
@@ -35,10 +35,11 @@ my $data = q{
 my $count = 0;
 my $scraper = scraper {
   process 't', 'tarray[]' => {
-    name => 'TEXT'
+    name => 'TEXT',
+    id   => '@id'
   };
   process 'e', 'e[]' => sub ($elem) {
-    return $count++;
+    return "{$elem.contents[0].text ~ $count++}";
   };
   process 't', 'ttext[]' => 'TEXT';
   process 'nest', 'nested[]' => scraper {
