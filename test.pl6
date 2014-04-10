@@ -30,13 +30,12 @@ my $scraper = scraper {
     name => 'TEXT'
   };
   process 'e', 'e[]' => sub ($elem) {
-    "count: $count".say;
     return $count++;
   };
   process 't', 'ttext[]' => 'TEXT';
   process 'nest', 'nested[]' => scraper {
-    #process 'id', 'id' => 'TEXT';
-    #process 'val', 'val' => 'TEXT';
+    process 'id', 'id' => 'TEXT';
+    process 'val', 'val' => 'TEXT';
     1;
   };
 }

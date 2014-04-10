@@ -2,11 +2,12 @@
 use XML;
 use XML::Query;
 
-my $local = 0;
+my $local = 1;
 class Web::Scraper {
   has Callable $.main;
   has $.ctx is rw;
   has %.d   is rw;
+  has $.id  is rw;
 
   method handler ($tag, %val, @elems) {
     my $flag; # flags can be [] for array, 
@@ -31,14 +32,14 @@ class Web::Scraper {
               $spush    = "$k={$e.text}\n" if $flag ne 'A';
             }
           }
-          %.d{$atag}.push(\%push) if $flag eq 'A';
+          %.d{$atag}.push($(%push)) if $flag eq 'A';
           %.d{$atag} ~= "$spush" if $flag ne 'A';
         }
       } elsif $v ~~ Callable {
         my $spush;
         for @elems -> $e {
           $spush ~= "{$v.(\$e)}" if $flag ne 'A';
-          %.d{$atag}.push($v.(\$e)) if $flag eq 'A';
+          %.d{$atag}.push($v.($e)) if $flag eq 'A';
         }
         $.d{$atag} = $spush if $flag ne 'A';
       } elsif $v ~~ Str {
@@ -52,28 +53,40 @@ class Web::Scraper {
     }
   }
 
-  multi method scrape (Str $data) {
-    $.ctx = XML::Query.new: xml => from-xml($data);
-    @.d = ();
-    $.main.();
-  }
+  multi method scrape (Str $data, $subelem?) {
+    $.ctx = XML::Query.new: xml => from-xml($data) if !$subelem.defined;
+    $.ctx = XML::Query.new: xml => $subelem if $subelem.defined;
+    %.d = ();
 
-  sub scraper (&block) is export {
-    my $self = Web::Scraper.new(main => &block);
-    my $p    = $local;
-    $local++;
-    sub process ($d1, %d2) is export {
-      my $p;
-      $p.say;
-      %d2.values[0].say;
+    my $*dynself = self;
+    "#{$.id}, scraping".say;
+    my proto process ($d1, %d2) is export {
+      my $self = $*Outer::dynself;
       if %d2.values[0].can('scrape') {
-        $self.ctx.($d1).data.say;
+        my @elems = $self.ctx.($d1).elems;
+        my $atag = %d2.keys[0];
+        my $flag = '';
+        $flag = 'A' if $atag ~~ m{ '[]' $ } ;
+        $atag.=subst(rx{ '[]' $ }, {''}) if $flag eq 'A';
+        %.d{$atag} = Array.new if $flag eq 'A';
+        %.d{$atag} = '' if $flag ne 'A';
+        for @elems -> $elem {
+          %d2.values[0].scrape('', $elem);
+          %.d{$atag} ~= %d2.values[0].d if $flag ne 'A';
+          %.d{$atag}.push( $(%d2.values[0].d) ) if $flag eq 'A';
+        }
       } else {
+        "$d1".say;
         my @elems = $self.ctx.($d1).elems;
         $self.handler($d1, %d2, @elems);
       }
     }
-    return $self;
+    $.main.();
   }
+
 };
+
+my sub scraper (&block) is export {
+  return Web::Scraper.new(main => &block, id => $local++);
+}
 
