@@ -83,4 +83,51 @@ $scraper.d = {
 };
 ```
 
-###Example with some extra sugar:
+##Example with a dynamic source file:
+###Data:
+####master.xml:
+```xml
+<xml>
+  <files>
+    <file>one.xml</file>
+    <file>two.xml</file>
+  </files>
+</xml>
+```
+####one.xml
+```xml
+<xml>
+  <id>1</id>
+  <word>one</word>
+</xml>
+```
+####two.xml
+```xml
+<xml>
+  <id>2</id>
+  <word>two</word>
+</xml>
+```
+###Syntax:
+```perl6
+my $dynamicscraper = scraper {
+  process 'id', 'id' => 'TEXT';
+  process 'word', 'alpha' => 'TEXT';
+};
+my $masterscraper = scraper {
+  process 'files', 'files[]' => scraper {
+    process 'file', 'src-file' => 'TEXT';
+    resource $dynamicscraper, 'file' => 'TEXT';
+  };
+};
+$masterscraper.scrape('master.xml');
+```
+###Results:
+```sh
+$masterscraper.d == {
+  files => [
+    { src-file => 'one.xml', id => '1', alpha => 'one', },
+    { src-file => 'two.xml', id => '2', alpha => 'two', },
+  ],
+}
+```
