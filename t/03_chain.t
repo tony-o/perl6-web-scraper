@@ -21,6 +21,8 @@ my $scraper    = scraper {
 
 $scraper.scrape: slurp('data/zero.xml');
 
+$scraper.d.say;
+
 plan 6;
 
 for 0 .. 2 -> $c{
