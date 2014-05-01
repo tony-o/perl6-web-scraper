@@ -2,6 +2,7 @@
 use XML;
 use XML::Query;
 use LWP::Simple;
+use HTML::Parser::XML;
 
 my $local = 1;
 class Web::Scraper {
@@ -11,10 +12,16 @@ class Web::Scraper {
   has $.id  is rw;
 
   method grab (XML::Element $elem, $val is copy) {
-    my $f = $val.substr(0,1) eq '@' ?? 'A' !! '';
-    $val = $val.substr(1) if $f eq 'A';
-    return $f eq 'A' ?? $elem.attribs{$val} !! $elem.contents[0].text;
-    return '0';
+    if $val ~~ Callable {
+      return $val.($elem.clone);
+    } else {
+      try {
+        my $f = $val.substr(0,1) eq '@' ?? 'A' !! '';
+        $val = $val.substr(1) if $f eq 'A';
+        return $f eq 'A' ?? $elem.attribs{$val} !! $elem.contents[0].defined ?? $elem.contents[0].text !! '';
+      };
+    }
+    return Nil;
   };
 
   method handler ($tag, %val, @elems) {
@@ -34,18 +41,24 @@ class Web::Scraper {
         for @elems -> $e {
           my %push;
           my $spush;
+          my $skipflag = 0;
           for $v.kv -> $k, $v {
-            %push{$k} = $.grab($e, $v) if $flag eq 'A';
-            $spush    = "$k={$.grab($e, $v)}\n" if $flag ne 'A';
+            my $rval = $.grab($e, $v);
+            $skipflag = 1, last if Any ~~ $rval;
+            %push{$k} = $rval          if $flag eq 'A';
+            $spush    = "$k=$rval\n" if $flag ne 'A';
           }
+          next if $skipflag == 1;
           %.d{$atag}.push($(%push)) if $flag eq 'A';
           %.d{$atag} ~= "$spush" if $flag ne 'A';
         }
       } elsif $v ~~ Callable {
         my $spush;
         for @elems -> $e {
-          $spush ~= "{$v.($e.clone)}" if $flag ne 'A';
-          %.d{$atag}.push($v.($e.clone)) if $flag eq 'A';
+          my $rval = $.grab($e, $v);
+          next if Any ~~ $rval;
+          $spush ~= $rval if $flag ne 'A';
+          %.d{$atag}.push($rval) if $flag eq 'A';
         }
         $.d{$atag} = $spush if $flag ne 'A';
       } elsif $v ~~ Str {
@@ -65,22 +78,30 @@ class Web::Scraper {
     my $dc;
     # test to see if we got a url
     if $data.substr(0, 4) eq 'http' {
+      try {
+        $dc   = LWP::Simple.get($data);
+        my $p = HTML::Parser::XML.new;
+        $p.parse($dc);
+        $dc   = $p.xmldoc;
+        $success = 1;
+      } if $success == 0;
       #get html from lwp::simple
       try {
-        $dc = from-xml(LWP::Simple.get($data));
+        my $html = LWP::Simple.get($data);
+        $dc = from-xml($html);
         $success = 1;
-      };
+      } if $success == 0;
     }
     # test to see if we can parse as xml
     try {
       $dc = from-xml($data);
       $success = 1;
-    };
+    } if $success == 0;
     # test to see if we can slurp
     try {
       $dc = from-xml(slurp($data));
       $success = 1;
-    }
+    } if $success == 0;
 
     die 'Couldn\'t determine data type or parse XML' if !$subelem.defined && $success == 0;
 
@@ -124,4 +145,3 @@ class Web::Scraper {
 my sub scraper (&block) is export {
   return Web::Scraper.new(main => &block, id => $local++);
 }
-

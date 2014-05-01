@@ -3,13 +3,22 @@
 use Web::Scraper;
 use Test;
 my $scraper = scraper {
-  process 't', 'tarray[]' => {
-    name => 'TEXT',
-    id   => '@id'
+  process 'a', 'tarray[]' => {
+    href => sub ($e) {
+      return $e.attribs<href> if $e.attribs<href>.defined && $e.attribs<href> !~~ Nil;
+      'return Any'.say;
+      return Any; 
+    },
+    meta => 'TEXT',
   };
 }
 plan 0;
-#$scraper.scrape('http://www.w3schools.com/html/html_intro.asp');
+$scraper.scrape('http://perlcabal.org/syn/S05.html');
+
+$scraper.d<tarray>.say;
+#for $scraper.d<tarray> -> $t {
+#  $t<href>.say;
+#}
 
 #$scraper.d.say;
 qw{{

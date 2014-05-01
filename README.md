@@ -1,12 +1,10 @@
 #Perl 6: Web::Scraper;
 
-This module works very similar to Perl 5's Web::Scraper.  Right now it has some extra sugar in some areas, and it's lacking in others.
+This module works very similar to Perl 5's Web::Scraper.  Right now it has some extra sugar in some areas. Currently works with parsing from XML and HTML (converts it to XHTML).
 
 ##Status:
-###Not working:
-XML is not parsing stuff returned by LWP::Simple;
 ###Working on:
-Building an XML tree from LWP::Simple;
+Maintenance mode, enhancemenets, etc.
 
 ##Syntax:
 ###Data:
