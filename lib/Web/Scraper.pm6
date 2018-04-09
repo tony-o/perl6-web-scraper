@@ -111,14 +111,14 @@ class Web::Scraper {
 
     my $*dynself = self;
     my proto resource (Web::Scraper $scraperbike, %d2) is export {
-      my $self = $*Outer::dynself;
+      my $self = $*dynself;
       my $f    = $self.ctx.(%d2.keys[0]).elems[0];
       my $v    = $self.grab($f, %d2.values[0]);
       $scraperbike.scrape($v);
       $self.d{$scraperbike.d.keys} = @($scraperbike.d.values);
     };
     my proto process ($d1, %d2) is export {
-      my $self  = $*Outer::dynself;
+      my $self  = $*dynself;
       if %d2.values[0].can('scrape') {
         my @elems = $self.ctx.($d1).elems.clone;
         my $atag = %d2.keys[0];
