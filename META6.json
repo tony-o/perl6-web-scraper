@@ -4,7 +4,7 @@
   "version"     : "0.1.4",
   "description" : "Similar to Web::Scraper for Perl5 with some other cool stuff, duh",
   "author"      : "Tony ODell",
-  "depends"     : [ "LWP::Simple", "HTML::Parser::XML", "XML::Query"],
+  "depends"     : [ "LWP::Simple", "HTML::Parser::XML", "XML::Query", "IO::Socket::SSL"],
   "auth": "zef:tony-o",
   "provides"    : {
     "Web::Scraper" : "lib/Web/Scraper.pm6"

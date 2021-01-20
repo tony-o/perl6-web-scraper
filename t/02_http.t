@@ -10,11 +10,11 @@ my $scraper = scraper {
     meta => 'TEXT',
   };
 }
-$scraper.scrape('http://design.perl6.org/S05.html');
+$scraper.scrape('t/data/s05.html'.IO.slurp);
 
 my @link = (
   { href => 'https://github.com/perl6/specs/', meta => 'syn' },
-  { href => 'http://design.perl6.org/', meta => 'Index of Synopses', },
+  { href => 'https://design.perl6.org/', meta => 'Index of Synopses', },
   { href => '#TITLE', meta => 'TITLE' },
   { href => '#VERSION', meta => 'VERSION' },
 );
